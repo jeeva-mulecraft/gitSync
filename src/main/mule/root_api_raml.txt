@@ -1,0 +1,119 @@
+#%RAML 1.0
+title: GitHub-GitLab Bidirectional Sync API
+version: v1
+baseUri: https://{environment}.cloudhub.io/api/{version}
+baseUriParameters:
+  environment:
+    description: The environment where the API is deployed
+    type: string
+    default: dev
+    enum: [dev, test, prod]
+
+protocols: [HTTPS]
+mediaType: application/json
+
+uses:
+  GitHubGitLabTypes: libraries/github-gitlab-types.raml
+  SecuritySchemes: libraries/security-schemes.raml
+  CommonTraits: libraries/common-traits.raml
+  ResponseExamples: libraries/response-examples.raml
+
+securedBy: [SecuritySchemes.basicAuth]
+
+/github:
+  displayName: GitHub Webhook Handler
+  /webhook:
+    post:
+      displayName: GitHub Webhook Event Handler
+      description: Handles webhook events from GitHub repositories and syncs to GitLab
+      is: [CommonTraits.webhookTrait, CommonTraits.errorHandling]
+      body:
+        application/json:
+          type: GitHubGitLabTypes.GitHubWebhookEvent
+          example: !include examples/github-webhook-request.json
+      responses:
+        200:
+          description: Webhook processed successfully
+          body:
+            application/json:
+              type: GitHubGitLabTypes.SyncResponse
+              example: !include examples/success-response.json
+        400:
+          description: Bad request - Invalid webhook payload
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-400-response.json
+        401:
+          description: Unauthorized - Invalid credentials
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-401-response.json
+        422:
+          description: Unprocessable Entity - Unable to sync data
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-422-response.json
+        500:
+          description: Internal server error
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-500-response.json
+
+/gitlab:
+  displayName: GitLab Webhook Handler
+  /webhook:
+    post:
+      displayName: GitLab Webhook Event Handler
+      description: Handles webhook events from GitLab repositories and syncs to GitHub
+      is: [CommonTraits.webhookTrait, CommonTraits.errorHandling]
+      body:
+        application/json:
+          type: GitHubGitLabTypes.GitLabWebhookEvent
+          example: !include examples/gitlab-webhook-request.json
+      responses:
+        200:
+          description: Webhook processed successfully
+          body:
+            application/json:
+              type: GitHubGitLabTypes.SyncResponse
+              example: !include examples/success-response.json
+        400:
+          description: Bad request - Invalid webhook payload
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-400-response.json
+        401:
+          description: Unauthorized - Invalid credentials
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-401-response.json
+        422:
+          description: Unprocessable Entity - Unable to sync data
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-422-response.json
+        500:
+          description: Internal server error
+          body:
+            application/json:
+              type: GitHubGitLabTypes.ErrorResponse
+              example: !include examples/error-500-response.json
+
+/health:
+  get:
+    displayName: Health Check
+    description: Health check endpoint for monitoring
+    responses:
+      200:
+        description: Service is healthy
+        body:
+          application/json:
+            type: GitHubGitLabTypes.HealthResponse
+            example: !include examples/health-response.json
