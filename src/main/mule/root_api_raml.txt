@@ -1,4 +1,4 @@
-#%RAML 1.0
+#%RAML 1.0 ------
 title: GitHub-GitLab Bidirectional Sync API
 version: v1
 baseUri: https://{environment}.cloudhub.io/api/{version}
