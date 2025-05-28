@@ -1,0 +1,244 @@
+#%RAML 1.0 Library
+usage: Common traits for GitHub-GitLab synchronization API
+
+traits:
+  webhookTrait:
+    displayName: Webhook Handling Trait
+    description: Common trait for webhook request handling
+    headers:
+      X-GitHub-Event?:
+        type: string
+        description: GitHub webhook event type
+        example: push
+      X-GitHub-Delivery?:
+        type: string
+        description: GitHub webhook delivery UUID
+        example: 12345678-1234-1234-1234-123456789012
+      X-Hub-Signature-256?:
+        type: string
+        description: GitHub webhook signature for payload verification
+        example: sha256=abc123def456
+      X-GitLab-Event?:
+        type: string
+        description: GitLab webhook event type
+        example: Push Hook
+      X-GitLab-Token?:
+        type: string
+        description: GitLab webhook secret token
+      User-Agent:
+        type: string
+        description: User agent of the webhook client
+        example: GitHub-Hookshot/abc123
+      Content-Type:
+        type: string
+        enum: [application/json]
+        default: application/json
+        description: Content type must be application/json
+
+  errorHandling:
+    displayName: Error Handling Trait
+    description: Common error handling for all endpoints
+    responses:
+      400:
+        description: Bad Request - The request is malformed or missing required parameters
+        headers:
+          X-Correlation-ID:
+            type: string
+            description: Unique identifier for request tracing
+            example: corr-123456789
+        body:
+          application/json:
+            properties:
+              error:
+                type: string
+                example: BAD_REQUEST
+              message:
+                type: string
+                example: Invalid request payload
+              status_code:
+                type: integer
+                example: 400
+              timestamp:
+                type: datetime
+                example: 2024-01-15T10:30:00Z
+              correlation_id:
+                type: string
+                example: corr-123456789
+      401:
+        description: Unauthorized - Authentication credentials are missing or invalid
+        headers:
+          WWW-Authenticate:
+            type: string
+            description: Authentication method required
+            example: Basic realm="GitHub-GitLab Sync API"
+          X-Correlation-ID:
+            type: string
+            description: Unique identifier for request tracing
+            example: corr-123456789
+        body:
+          application/json:
+            properties:
+              error:
+                type: string
+                example: UNAUTHORIZED
+              message:
+                type: string
+                example: Authentication required
+              status_code:
+                type: integer
+                example: 401
+              timestamp:
+                type: datetime
+                example: 2024-01-15T10:30:00Z
+              correlation_id:
+                type: string
+                example: corr-123456789
+      422:
+        description: Unprocessable Entity - The request is well-formed but cannot be processed
+        headers:
+          X-Correlation-ID:
+            type: string
+            description: Unique identifier for request tracing
+            example: corr-123456789
+        body:
+          application/json:
+            properties:
+              error:
+                type: string
+                example: UNPROCESSABLE_ENTITY
+              message:
+                type: string
+                example: Unable to synchronize repository data
+              status_code:
+                type: integer
+                example: 422
+              timestamp:
+                type: datetime
+                example: 2024-01-15T10:30:00Z
+              correlation_id:
+                type: string
+                example: corr-123456789
+              details:
+                type: object
+                properties:
+                  validation_errors?:
+                    type: array
+                    items:
+                      type: string
+                  sync_errors?:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        error:
+                          type: string
+      500:
+        description: Internal Server Error - An unexpected error occurred
+        headers:
+          X-Correlation-ID:
+            type: string
+            description: Unique identifier for request tracing
+            example: corr-123456789
+        body:
+          application/json:
+            properties:
+              error:
+                type: string
+                example: INTERNAL_SERVER_ERROR
+              message:
+                type: string
+                example: An unexpected error occurred while processing the request
+              status_code:
+                type: integer
+                example: 500
+              timestamp:
+                type: datetime
+                example: 2024-01-15T10:30:00Z
+              correlation_id:
+                type: string
+                example: corr-123456789
+
+  corsEnabled:
+    displayName: CORS Enabled Trait
+    description: Enables Cross-Origin Resource Sharing for web clients
+    headers:
+      Access-Control-Allow-Origin:
+        type: string
+        description: Allowed origins for CORS
+        default: "*"
+      Access-Control-Allow-Methods:
+        type: string
+        description: Allowed HTTP methods
+        default: "GET, POST, PUT, DELETE, OPTIONS"
+      Access-Control-Allow-Headers:
+        type: string
+        description: Allowed headers
+        default: "Content-Type, Authorization, X-Requested-With"
+
+  rateLimited:
+    displayName: Rate Limited Trait
+    description: Applies rate limiting to prevent abuse
+    responses:
+      429:
+        description: Too Many Requests - Rate limit exceeded
+        headers:
+          X-RateLimit-Limit:
+            type: integer
+            description: Maximum number of requests allowed per time window
+            example: 1000
+          X-RateLimit-Remaining:
+            type: integer
+            description: Number of requests remaining in the current window
+            example: 0
+          X-RateLimit-Reset:
+            type: integer
+            description: Time when the rate limit resets (Unix timestamp)
+            example: 1642248600
+          Retry-After:
+            type: integer
+            description: Number of seconds to wait before making another request
+            example: 3600
+        body:
+          application/json:
+            properties:
+              error:
+                type: string
+                example: RATE_LIMIT_EXCEEDED
+              message:
+                type: string
+                example: Rate limit exceeded. Please try again later.
+              status_code:
+                type: integer
+                example: 429
+
+  cacheable:
+    displayName: Cacheable Trait
+    description: Indicates that the response can be cached
+    headers:
+      Cache-Control:
+        type: string
+        description: Cache control directives
+        default: "public, max-age=300"
+      ETag:
+        type: string
+        description: Entity tag for cache validation
+        example: "\"abc123def456\""
+
+  traceable:
+    displayName: Traceable Trait
+    description: Adds correlation ID for request tracing
+    headers:
+      X-Correlation-ID:
+        type: string
+        description: Unique identifier for request tracing
+        example: corr-123456789
+        required: false
+    responses:
+      200:
+        headers:
+          X-Correlation-ID:
+            type: string
+            description: Unique identifier for request tracing
+            example: corr-123456789
